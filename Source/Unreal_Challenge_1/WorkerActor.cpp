@@ -23,5 +23,6 @@ void AWorkerActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	//test
 }
 
