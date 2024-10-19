@@ -34,6 +34,8 @@ public:
 
     float GetStoneGatherRate();
 
+    bool GetIsActive();
+
 private:
     AResourcesDataActor* ResourcesDataActorRef;
 

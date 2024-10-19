@@ -22,8 +22,6 @@ AWorkerActor::AWorkerActor()
 void AWorkerActor::BeginPlay()
 {
     Super::BeginPlay();
-
-    ActivateWorker();
 }
 
 // Called every frame
@@ -109,6 +107,11 @@ float AWorkerActor::GetWoodGatherRate()
 float AWorkerActor::GetStoneGatherRate()
 {
     return StoneGatherRates[Level];
+}
+
+bool AWorkerActor::GetIsActive()
+{
+    return bIsActive;
 }
 
 bool AWorkerActor::LevelUp()
