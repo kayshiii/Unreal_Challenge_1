@@ -9,7 +9,7 @@
 AMyHUD::AMyHUD()
 {
     // Load the Widget Blueprint class
-    static ConstructorHelpers::FClassFinder<UUserWidget> ResourceWidgetBPClass(TEXT("/Content/HUD/WBP_UI"));
+    static ConstructorHelpers::FClassFinder<UUserWidget> ResourceWidgetBPClass(TEXT("/Content/HUD/WBP_UI.WBP_UI"));
     if (ResourceWidgetBPClass.Class != nullptr)
     {
         ResourceWidgetClass = ResourceWidgetBPClass.Class;
