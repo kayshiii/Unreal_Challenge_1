@@ -1,5 +1,5 @@
 #include "WorkerActor.h"
-#include "Components/StaticMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 
 // Sets default values
 AWorkerActor::AWorkerActor()
@@ -7,16 +7,15 @@ AWorkerActor::AWorkerActor()
     PrimaryActorTick.bCanEverTick = true;
 
     Level = 1;
-    bIsActive = true;
-
-    // Create a Scene Component as the root
+    bIsActive = false;
+    
     RootSceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootSceneComponent"));
     RootComponent = RootSceneComponent;
 
-    WorkerMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WorkerMesh"));
-    WorkerMesh->SetupAttachment(RootSceneComponent); // Attach the WorkerMesh to the root scene component
+    WorkerMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WorkerMesh"));
+    WorkerMesh->SetupAttachment(RootSceneComponent); 
 
-    InitializeStats();
+    //InitializeStats();
 }
 
 // Called when the game starts or when spawned
@@ -33,6 +32,15 @@ void AWorkerActor::Tick(float DeltaTime)
     if (bIsActive)
     {
         GatherResources();
+    }
+}
+
+// Function to set reference to ResourcesDataActor
+void AWorkerActor::SetResourcesDataActor(AResourcesDataActor* ResourcesActor)
+{
+    if (ResourcesActor)
+    {
+        ResourcesDataActorRef = ResourcesActor;
     }
 }
 
@@ -61,43 +69,34 @@ void AWorkerActor::InitializeStats()
 void AWorkerActor::ActivateWorker()
 {
     bIsActive = true;
-    CurrentState = EWorkerState::Gathering;
+    CurrentTarget = BasePoint;
 }
 
 void AWorkerActor::GatherResources()
 {
-    FVector CurrentTarget;
-    if (CurrentState == EWorkerState::Gathering && ResourceTargetActor)
-    {
-        MoveToTarget(ResourceTargetActor->GetActorLocation());
+    FVector CurrentLocation = GetActorLocation();
+    FVector Distance = CurrentTarget - CurrentLocation;
+    FVector NewLocation = CurrentLocation;
+    float DistanceToTarget = Distance.Size();
 
-        // Check if the worker has reached the resource target
-        if (FVector::Dist(GetActorLocation(), ResourceTargetActor->GetActorLocation()) <= 1.0f)
+    Distance.Normalize();
+
+    NewLocation.Z = CurrentLocation.Z;
+    NewLocation = CurrentLocation + Distance * MovementSpeed;
+    SetActorLocation(NewLocation);
+
+    if (DistanceToTarget <= 10.0f)
+    {
+        SetActorLocation(CurrentTarget);
+        if (CurrentTarget == BasePoint)
         {
-            // Switch to delivering state
-            CurrentTarget = BaseTargetActor->GetActorLocation();
-            CurrentState = EWorkerState::Delivering; // Update state
+            CurrentTarget = ResourcePoint;
+        }
+        else
+        {
+            CurrentTarget = BasePoint;
         }
     }
-    else if (CurrentState == EWorkerState::Delivering && BaseTargetActor)
-    {
-        MoveToTarget(BaseTargetActor->GetActorLocation());
-
-        // Check if the worker has reached the base target
-        if (FVector::Dist(GetActorLocation(), BaseTargetActor->GetActorLocation()) <= 1.0f)
-        {
-            AddResources(bResourceType);
-            CurrentTarget = ResourceTargetActor->GetActorLocation();
-            CurrentState = EWorkerState::Gathering; // Update state
-        }
-    }
-}
-
-void AWorkerActor::MoveToTarget(FVector CurrentTarget)
-{
-    // Move the worker towards the target
-    FVector Direction = (CurrentTarget - GetActorLocation()).GetSafeNormal();
-    AddActorLocalOffset(Direction * MovementSpeed);
 }
 
 float AWorkerActor::GetWoodGatherRate()
@@ -110,15 +109,20 @@ float AWorkerActor::GetStoneGatherRate()
     return StoneGatherRates[Level];
 }
 
+bool AWorkerActor::GetIsActive()
+{
+    return bIsActive;
+}
+
 bool AWorkerActor::LevelUp()
 {
-    if (ResourceData)
+    if (ResourcesDataActorRef)
     {
         TMap<FString, int32> LevelCost = LevelCosts[Level + 1];
-        if (ResourceData->GetWoodAmount() >= LevelCost["Wood"] && ResourceData->GetStoneAmount() >= LevelCost["Stone"])
+        if (ResourcesDataActorRef->GetWoodAmount() >= LevelCost["Wood"] && ResourcesDataActorRef->GetStoneAmount() >= LevelCost["Stone"])
         {
-            ResourceData->SetWoodAmount(ResourceData->GetWoodAmount() - LevelCost["Wood"]);
-            ResourceData->SetStoneAmount(ResourceData->GetStoneAmount() - LevelCost["Stone"]);
+            ResourcesDataActorRef->SetWoodAmount(ResourcesDataActorRef->GetWoodAmount() - LevelCost["Wood"]);
+            ResourcesDataActorRef->SetStoneAmount(ResourcesDataActorRef->GetStoneAmount() - LevelCost["Stone"]);
             Level++;
             return true;
         }
@@ -133,12 +137,12 @@ void AWorkerActor::AddResources(bool bType)
 
     if (bType)
     {
-        ResourceData->SetWoodAmount(ResourceData->GetWoodAmount() + WoodGathered);
+        ResourcesDataActorRef->SetWoodAmount(ResourcesDataActorRef->GetWoodAmount() + WoodGathered);
     }
 
     // Add stone
     else
     {
-        ResourceData->SetWoodAmount(ResourceData->GetStoneAmount() + StoneGathered);
+        ResourcesDataActorRef->SetWoodAmount(ResourcesDataActorRef->GetStoneAmount() + StoneGathered);
     }
 }
