@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "ResourceData.h" // Include the ResourceData header
+#include "ResourcesDataActor.h"
 #include "WorkerActor.generated.h"
 
 UCLASS()
@@ -20,40 +20,41 @@ protected:
 public:
     virtual void Tick(float DeltaTime) override;
 
+    void SetResourcesDataActor(AResourcesDataActor* ResourcesActor);
+
     void InitializeStats();
+
     void ActivateWorker();
+
     void GatherResources();
-    void MoveToTarget(FVector CurrentTarget);
+
     bool LevelUp();
-    void SetResourceData(UResourceData* NewResourceData) { ResourceData = NewResourceData; }
 
     float GetWoodGatherRate();
+
     float GetStoneGatherRate();
 
 private:
-    UPROPERTY()
-    UResourceData* ResourceData; // Reference to the player's ResourceData
+    AResourcesDataActor* ResourcesDataActorRef;
 
     // Gathering rates and costs
     TMap<int32, float> WoodGatherRates;
     TMap<int32, float> StoneGatherRates;
     TMap<int32, TMap<FString, int32>> LevelCosts;
 
-    // Worker state and targets
-    enum class EWorkerState { Gathering, Delivering };
-    EWorkerState CurrentState;
-
     UPROPERTY(EditAnywhere, Category = "RootSceneComponent")
     USceneComponent* RootSceneComponent;
 
     UPROPERTY(EditAnywhere, Category = "WorkerMesh")
-    UStaticMeshComponent* WorkerMesh;
+    USkeletalMeshComponent* WorkerMesh;
 
     UPROPERTY(EditAnywhere, Category = "ResourceTarget")
-    AActor* ResourceTargetActor; // The resource the worker is gathering from
+    FVector ResourcePoint; 
 
     UPROPERTY(EditAnywhere, Category = "BaseTarget")
-    AActor* BaseTargetActor; // The base where resources are delivered
+    FVector BasePoint;
+
+    FVector CurrentTarget;
 
     UPROPERTY(EditAnywhere, Category = "MovementSpeed");
     float MovementSpeed;
