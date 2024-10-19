@@ -30,6 +30,9 @@ public:
 	UPROPERTY(EditAnywhere)
 	ATriggerVolume* TriggerVol;
 
+	UPROPERTY(EditAnywhere)
+	APawn* PlayerPawn;
+
 private:
 	bool bCanInteract;
 
