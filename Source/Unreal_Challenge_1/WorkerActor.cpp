@@ -1,17 +1,13 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "WorkerActor.h"
 #include "Components/StaticMeshComponent.h"
 
 // Sets default values
 AWorkerActor::AWorkerActor()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+    PrimaryActorTick.bCanEverTick = true;
 
-	Level = 1;
-	bIsActive = true;
+    Level = 1;
+    bIsActive = true;
 
     // Create a Scene Component as the root
     RootSceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootSceneComponent"));
@@ -26,19 +22,18 @@ AWorkerActor::AWorkerActor()
 // Called when the game starts or when spawned
 void AWorkerActor::BeginPlay()
 {
-	Super::BeginPlay();
-	
+    Super::BeginPlay();
 }
 
 // Called every frame
 void AWorkerActor::Tick(float DeltaTime)
 {
-	Super::Tick(DeltaTime);
+    Super::Tick(DeltaTime);
 
-	if (bIsActive)
-	{
-		GatherResources();
-	}
+    if (bIsActive)
+    {
+        GatherResources();
+    }
 }
 
 void AWorkerActor::InitializeStats()
@@ -71,90 +66,79 @@ void AWorkerActor::ActivateWorker()
 
 void AWorkerActor::GatherResources()
 {
+    FVector CurrentTarget;
     if (CurrentState == EWorkerState::Gathering && ResourceTargetActor)
     {
         MoveToTarget(ResourceTargetActor->GetActorLocation());
+
+        // Check if the worker has reached the resource target
+        if (FVector::Dist(GetActorLocation(), ResourceTargetActor->GetActorLocation()) <= 1.0f)
+        {
+            // Switch to delivering state
+            CurrentTarget = BaseTargetActor->GetActorLocation();
+            CurrentState = EWorkerState::Delivering; // Update state
+        }
     }
     else if (CurrentState == EWorkerState::Delivering && BaseTargetActor)
     {
         MoveToTarget(BaseTargetActor->GetActorLocation());
-    }
-}
 
-void AWorkerActor::MoveToTarget(FVector CurrentTarget)
-{
-    // Get the current location of the worker
-    FVector CurrentLocation = GetActorLocation();
-    FVector Distance = CurrentTarget - CurrentLocation;
-    float DistanceToTarget = Distance.Size();
-
-    // Normalize the distance vector to get the direction
-    Distance.Normalize();
-
-    // Maintain the Z position
-    FVector NewLocation = CurrentLocation;
-    NewLocation.Z = CurrentLocation.Z; // Keep the same height
-
-    // Move the worker towards the target
-    NewLocation += Distance * MovementSpeed * GetWorld()->DeltaTimeSeconds;
-    SetActorLocation(NewLocation);
-
-    // Check if the worker has reached the target
-    if (DistanceToTarget <= 1.0f || (MovementSpeed * GetWorld()->DeltaTimeSeconds) >= DistanceToTarget)
-    {
-        // Snap to the target location
-        SetActorLocation(CurrentTarget);
-
-        // Switch targets
-        if (CurrentTarget == ResourceTargetActor->GetActorLocation())
+        // Check if the worker has reached the base target
+        if (FVector::Dist(GetActorLocation(), BaseTargetActor->GetActorLocation()) <= 1.0f)
         {
-            CurrentTarget = BaseTargetActor->GetActorLocation();
-            CurrentState = EWorkerState::Delivering; // Update state
-        }
-        else
-        {
+            AddResources(bResourceType);
             CurrentTarget = ResourceTargetActor->GetActorLocation();
             CurrentState = EWorkerState::Gathering; // Update state
         }
     }
 }
 
-bool AWorkerActor::LevelUp()
+void AWorkerActor::MoveToTarget(FVector CurrentTarget)
 {
-    if (Level < 5)
-    {
-        Level++;
-
-        // Increase movement speed based on the new level
-        switch (Level)
-        {
-        case 3:
-            MovementSpeed *= 1.05f; // Increase by 5%
-            break;
-        case 4:
-            MovementSpeed *= 1.10f; // Increase by 10%
-            break;
-        case 5:
-            MovementSpeed *= 1.15f; // Increase by 15%
-            break;
-        default:
-            break;
-        }
-
-        return true; // Level up successful
-    }
-
-
-    return false; // Already at max level
+    // Move the worker towards the target
+    FVector Direction = (CurrentTarget - GetActorLocation()).GetSafeNormal();
+    AddActorLocalOffset(Direction * MovementSpeed);
 }
 
-float AWorkerActor::GetWoodGatherRate() const
+float AWorkerActor::GetWoodGatherRate()
 {
     return WoodGatherRates[Level];
 }
 
-float AWorkerActor::GetStoneGatherRate() const
+float AWorkerActor::GetStoneGatherRate()
 {
     return StoneGatherRates[Level];
 }
 
+bool AWorkerActor::LevelUp()
+{
+    if (ResourceData)
+    {
+        TMap<FString, int32> LevelCost = LevelCosts[Level + 1];
+        if (ResourceData->GetWoodAmount() >= LevelCost["Wood"] && ResourceData->GetStoneAmount() >= LevelCost["Stone"])
+        {
+            ResourceData->SetWoodAmount(ResourceData->GetWoodAmount() - LevelCost["Wood"]);
+            ResourceData->SetStoneAmount(ResourceData->GetStoneAmount() - LevelCost["Stone"]);
+            Level++;
+            return true;
+        }
+    }
+    return false;
+}
+
+void AWorkerActor::AddResources(bool bType)
+{
+    float WoodGathered = GetWoodGatherRate();
+    float StoneGathered = GetStoneGatherRate();
+
+    if (bType)
+    {
+        ResourceData->SetWoodAmount(ResourceData->GetWoodAmount() + WoodGathered);
+    }
+
+    // Add stone
+    else
+    {
+        ResourceData->SetWoodAmount(ResourceData->GetStoneAmount() + StoneGathered);
+    }
+}
