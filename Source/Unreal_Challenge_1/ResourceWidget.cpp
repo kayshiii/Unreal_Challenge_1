@@ -6,8 +6,10 @@
 
 void UResourceWidget::UpdateResourceCounts(int32 Wood, int32 Stone)
 {
-    SetWoodCount(Wood);
-    SetStoneCount(Stone);
+    if(WoodCountText)
+        WoodCountText->SetText(FText::FromString(FString::Printf(TEXT("%d"), Wood)));
+    if (StoneCountText)
+        StoneCountText->SetText(FText::FromString(FString::Printf(TEXT("%d"), Stone)));
 }
 
 void UResourceWidget::UpdateMaxResources(int32 MaxWood, int32 MaxStone)
@@ -46,4 +48,10 @@ void UResourceWidget::SetMaxStone(int32 MaxStone)
     {
         MaxStoneText->SetText(FText::FromString(FString::Printf(TEXT("Max Stone: %d"), MaxStone)));
     }
+}
+
+void UResourceWidget::SetActiveWorkers(int32 ActiveWorkers)
+{
+    if (ActiveWorkersText)
+        ActiveWorkersText->SetText(FText::FromString(FString::Printf(TEXT("%d"), ActiveWorkers)));
 }

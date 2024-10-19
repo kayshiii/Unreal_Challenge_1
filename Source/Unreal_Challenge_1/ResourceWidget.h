@@ -17,6 +17,7 @@ class UNREAL_CHALLENGE_1_API UResourceWidget : public UUserWidget
 public:
 	void UpdateResourceCounts(int32 Wood, int32 Stone);
 	void UpdateMaxResources(int32 MaxWood, int32 MaxStone);
+	void SetActiveWorkers(int32 ActiveWorkers);
 
 private:
 	UPROPERTY(meta = (BindWidget))
@@ -30,6 +31,9 @@ private:
 
 	UPROPERTY(meta = (BindWidget))
 	class UTextBlock* MaxStoneText;
+	
+	UPROPERTY(meta = (BindWidget))
+	class UTextBlock* ActiveWorkersText;
 
 	UFUNCTION(BlueprintCallable, Category = "Resource Widget")
 	void SetWoodCount(int32 Wood);
